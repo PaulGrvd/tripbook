@@ -687,7 +687,8 @@ function renderNotes() {
 const DAY_COLORS = ["#d1495b", "#2a9d8f", "#e0871f", "#4c6ef5", "#8e5aa8", "#6a994e", "#c2185b", "#3d7ea6"];
 const hasGeo = o => !!(o && o.geo && isFinite(+o.geo.lat) && isFinite(+o.geo.lng));
 const ll = o => [+o.geo.lat, +o.geo.lng];
-const MAP = { el: null, map: null, layer: null, markers: {}, pins: {}, fitKey: "", loading: null, fromRoute: "", ready: false, me: null };
+const MAP = { el: null, map: null, layer: null, route: null, markers: {}, pins: {}, places: [], fitKey: "", loading: null, fromRoute: "", ready: false, me: null, autoDone: false };
+const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const PEEK = 140; // hauteur du panneau replié (= --peek en CSS)
 const anim = () => !matchMedia("(prefers-reduced-motion: reduce)").matches;
 const TILES = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}";
@@ -719,6 +720,9 @@ function pinsOf(p) {
 function renderMap() {
   const r = S.route, ps = mapPlaces();
   if (r.id && r.id !== MAP.fromRoute) { MAP.fromRoute = r.id; const p = ps.find(x => x.days.some(d => d.id === r.id)); if (p) S.map = { place: p.key, day: r.id }; }
+  // pendant le voyage, la carte s'ouvre sur le jour en cours (une seule fois, ensuite on respecte la navigation)
+  if (!r.id && !MAP.autoDone && !S.map.place && inTrip()) { const t = todayISO(), p = ps.find(x => x.days.some(d => d.date === t)); if (p) S.map = { place: p.key, day: t, sheet: "peek" }; }
+  MAP.autoDone = true;
   topbar({ title: "Carte" });
   const p = ps.find(x => x.key === S.map.place);
   const chips = `<nav class="map-places" aria-label="Lieux"><button type="button" data-act="mapPlace" data-key="" class="${!p ? "current" : ""}">Tout</button>${ps.map((x, i) => `<button type="button" data-act="mapPlace" data-key="${esc(x.key)}" class="${p === x ? "current" : ""}"><small>${i + 1}</small>${esc(x.city)}</button>`).join("")}</nav>`;
@@ -727,7 +731,7 @@ function renderMap() {
 }
 function mapPanel(p) {
   const sel = S.map.day, first = p.days[0], last = p.days[p.days.length - 1];
-  const legend = p.days.map(d => `<button type="button" class="daychip${sel === d.id ? " on" : ""}" data-act="mapDay" data-id="${esc(d.id)}" style="--c:${p.color(d.id)}" aria-pressed="${sel === d.id}"><i></i>${fmtDow(d.date)} ${parseISO(d.date).getDate()}</button>`).join("");
+  const legend = p.days.map(d => `<button type="button" class="daychip${sel === d.id ? " on" : ""}${d.date === todayISO() ? " today" : ""}" data-act="mapDay" data-id="${esc(d.id)}" style="--c:${p.color(d.id)}" aria-pressed="${sel === d.id}"${d.date === todayISO() ? ' title="Aujourd\'hui"' : ""}><i></i>${fmtDow(d.date)} ${parseISO(d.date).getDate()}</button>`).join("");
   const lodg = p.lodgings.map(b => row({ act: hasGeo(b) ? "mapFocus" : "openBk", attrs: hasGeo(b) ? `data-pin="bk:${esc(b.id)}"` : `data-id="${esc(b.id)}"`, lead: icon("bed", 20), title: esc(b.name), sub: esc([b.checkin && `${fmtDay(b.checkin)} – ${fmtDay(b.checkout)}`, b.address].filter(Boolean).join(" · ")), trail: (b.status !== "confirmed" ? badge("À réserver", "red") : hasGeo(b) ? "" : badge("Sans position")) + icon("chev", 18) })).join("");
   const days = (sel ? p.days.filter(d => d.id === sel) : p.days).map(d => {
     const acts = (d.activities || []).map(a => {
@@ -766,7 +770,8 @@ async function mountMap() {
     MAP.map.on("dragstart", () => { if (S.map.sheet !== "peek" && $("#view .map-panel")) setSheet("peek"); });
     L.control.attribution({ position: "topright", prefix: false }).addAttribution('Tiles © <a href="https://www.esri.com" target="_blank" rel="noopener">Esri</a>').addTo(MAP.map);
     MAP.layer = L.layerGroup().addTo(MAP.map);
-    MAP.map.on("zoomend", () => MAP.el.classList.toggle("labels-on", MAP.map.getZoom() >= 14));
+    MAP.map.on("zoomend", () => { MAP.el.classList.toggle("labels-on", MAP.map.getZoom() >= 14); declutterPlaces(); });
+    MAP.map.on("moveend", layoutLabels);
   }
   MAP.map.invalidateSize();
   drawMarkers();
@@ -820,20 +825,33 @@ function popupHtml(pin) {
 }
 function drawMarkers() {
   const ps = mapPlaces(), p = ps.find(x => x.key === S.map.place);
-  MAP.layer.clearLayers(); MAP.markers = {};
+  MAP.layer.clearLayers(); MAP.markers = {}; MAP.places = [];
+  const ink = cssVar("--ink") || "#1d1915";
+  // vue d'ensemble : l'itinéraire relie les étapes dans l'ordre, chaque étape porte son nom
+  if (!p && ps.length > 1) L.polyline(ps.map(x => x.center), { color: ink, weight: 2, opacity: .55, dashArray: "1 7", lineCap: "round", interactive: false }).addTo(MAP.layer);
   ps.forEach((x, i) => {
     if (x === p) return;
-    L.marker(x.center, { icon: L.divIcon({ className: "mk", html: `<div class="mk-place">${i + 1}</div>`, iconSize: [44, 44], iconAnchor: [22, 22] }), keyboard: false, title: x.city })
+    const m = L.marker(x.center, { icon: L.divIcon({ className: "mk", html: `<div class="mk-place">${i + 1}</div>`, iconSize: [44, 44], iconAnchor: [22, 22] }), keyboard: false, title: x.city, zIndexOffset: p ? 0 : 100 - i })
       .on("click", () => actions.mapPlace({ dataset: { key: x.key } })).addTo(MAP.layer);
+    if (!p) { m.bindTooltip(esc(x.city), { permanent: true, direction: "auto", offset: [17, 0], className: "mk-label place", opacity: 1, pane: "shadowPane" }); MAP.places.push({ m, at: x.center }); }
   });
   MAP.pins = {};
-  if (p) for (const pin of p.pins) {
-    const on = !S.map.day || pin.kind === "hotel" || pin.day.id === S.map.day;
-    const m = L.marker(pin.latlng, { icon: pinIcon(pin, on), zIndexOffset: pin.kind === "hotel" ? 1000 : on ? 500 : 0, keyboard: false, title: pin.title });
-    m.on("click", () => openPin(pin.id));
-    m.bindTooltip(esc(pin.title), { permanent: true, direction: "right", offset: [pin.kind === "hotel" ? 18 : 15, 0], className: "mk-label" + (pin.kind === "hotel" ? " hotel" : "") + (on ? "" : " dim"), opacity: 1 });
-    m.addTo(MAP.layer); MAP.markers[pin.id] = m; MAP.pins[pin.id] = pin;
+  if (p) {
+    for (const pin of p.pins) {
+      const on = !S.map.day || pin.kind === "hotel" || pin.day.id === S.map.day;
+      const m = L.marker(pin.latlng, { icon: pinIcon(pin, on), zIndexOffset: pin.kind === "hotel" ? 1000 : on ? 500 : 0, keyboard: false, title: pin.title });
+      m.on("click", () => openPin(pin.id));
+      m.bindTooltip(esc(pin.title), { permanent: true, direction: "right", offset: [pin.kind === "hotel" ? 18 : 15, 0], className: "mk-label" + (pin.kind === "hotel" ? " hotel" : "") + (on ? "" : " dim"), opacity: 1, pane: "shadowPane" });   // sous les repères : une étiquette ne cache jamais un point
+      m.addTo(MAP.layer); MAP.markers[pin.id] = m; MAP.pins[pin.id] = pin;
+    }
+    // jour sélectionné : le fil de la journée, du logement à la dernière activité
+    if (S.map.day) {
+      const hotel = p.pins.find(x => x.kind === "hotel" && !x.todo) || p.pins.find(x => x.kind === "hotel");
+      const pts = [...(hotel ? [hotel.latlng] : []), ...p.pins.filter(x => x.kind === "act" && x.day.id === S.map.day).map(x => x.latlng)];
+      if (pts.length > 1) L.polyline(pts, { color: p.color(S.map.day), weight: 3, opacity: .75, dashArray: "1 9", lineCap: "round", interactive: false }).addTo(MAP.layer);
+    }
   }
+  declutterPlaces(); layoutLabels();
   const ph = panelHeight();
   MAP.el.classList.toggle("labels-on", MAP.map.getZoom() >= 14);
   // recadrage seulement quand la sélection change (pas à chaque synchro)
@@ -846,6 +864,41 @@ function drawMarkers() {
   if (!pts.length) pts = p.pins.map(x => x.latlng);
   if (pts.length > 1) MAP.map.fitBounds(L.latLngBounds(pts), { ...pad, maxZoom: 15 });
   else MAP.map.setView(pts[0] || p.center, 13);
+}
+// vue d'ensemble : deux étapes trop proches à ce zoom (ex. deux villes voisines) sont écartées de quelques pixels
+function declutterPlaces() {
+  if (!MAP.map || !MAP.map._loaded || MAP.places.length < 2) return;
+  const z = MAP.map.getZoom(), pts = MAP.places.map(x => MAP.map.project(x.at, z)), MIN = 36;
+  for (let k = 0; k < 4; k++) for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) {
+    const d = pts[j].subtract(pts[i]), dist = Math.hypot(d.x, d.y);
+    if (dist >= MIN) continue;
+    const u = dist < 1 ? L.point(0, -1) : d.divideBy(dist), push = (MIN - dist) / 2;
+    pts[i] = pts[i].subtract(u.multiplyBy(push)); pts[j] = pts[j].add(u.multiplyBy(push));
+  }
+  MAP.places.forEach((x, i) => x.m.setLatLng(MAP.map.unproject(pts[i], z)));
+}
+// étiquettes : à droite ou à gauche selon le côté de l'écran (jamais coupées) ; vue d'ensemble : posée là où elle ne chevauche rien, sinon masquée
+function setTip(m, dir, gap) {
+  const tt = m.getTooltip(); if (!tt || tt.options.direction === dir) return;
+  tt.options.direction = dir; tt.options.offset = L.point(dir === "left" ? [-gap, 0] : dir === "right" ? [gap, 0] : dir === "top" ? [0, -gap] : [0, gap]); tt.update();
+}
+function layoutLabels() {
+  if (!MAP.map || !MAP.map._loaded) return;   // avant le premier cadrage, pas de projection possible
+  const W = MAP.el.clientWidth;
+  for (const id in MAP.markers) { const m = MAP.markers[id]; setTip(m, MAP.map.latLngToContainerPoint(m.getLatLng()).x > W * .62 ? "left" : "right", MAP.pins[id].kind === "hotel" ? 18 : 15); }
+  if (!MAP.places.length) return;
+  const box = (x1, y1, x2, y2) => [x1, y1, x2, y2], hit = (b, list) => list.some(o => b[0] < o[2] && b[2] > o[0] && b[1] < o[3] && b[3] > o[1]);
+  const taken = MAP.places.map(x => { const c = MAP.map.latLngToContainerPoint(x.m.getLatLng()); return box(c.x - 16, c.y - 16, c.x + 16, c.y + 16); });
+  taken.push(box(-1e4, -1e4, 1e4, 100));   // bandeau des étapes en haut
+  for (const x of MAP.places) {
+    const tt = x.m.getTooltip(), el = tt && tt.getElement(); if (!el) continue;
+    if (el.offsetWidth) { x.w = el.offsetWidth; x.h = el.offsetHeight; }   // taille mémorisée : une étiquette masquée ne se mesure plus
+    const w = x.w || 80, h = x.h || 26, c = MAP.map.latLngToContainerPoint(x.m.getLatLng()), g = 17;
+    const cands = [["right", box(c.x + g, c.y - h / 2, c.x + g + w, c.y + h / 2)], ["left", box(c.x - g - w, c.y - h / 2, c.x - g, c.y + h / 2)], ["top", box(c.x - w / 2, c.y - g - h, c.x + w / 2, c.y - g)], ["bottom", box(c.x - w / 2, c.y + g, c.x + w / 2, c.y + g + h)]];
+    const pick = cands.find(k => !hit(k[1], taken) && k[1][0] > 4 && k[1][2] < W - 4);
+    el.classList.toggle("hide", !pick);
+    if (pick) { setTip(x.m, pick[0], g); taken.push(pick[1]); }
+  }
 }
 // depuis la liste : replier le panneau, centrer le point dans la zone visible et ouvrir sa bulle
 function focusPin(id) {

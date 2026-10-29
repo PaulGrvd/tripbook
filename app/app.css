@@ -362,6 +362,10 @@ body.is-map .view{max-width:none;padding:0}
 .mapwrap.ready::before{display:none}
 .map-slot,.map{position:absolute;inset:0}
 .map{font-family:var(--body)}
+/* fond Esri : légèrement désaturé pour laisser la place aux repères ; en mode nuit, inversion douce des tuiles */
+.map .leaflet-tile-pane{filter:saturate(.72) contrast(.96)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .map .leaflet-tile-pane{filter:invert(1) hue-rotate(185deg) brightness(.78) contrast(.9) saturate(.45)}}
+:root[data-theme="dark"] .map .leaflet-tile-pane{filter:invert(1) hue-rotate(185deg) brightness(.78) contrast(.9) saturate(.45)}
 .map-slot .empty{position:absolute;inset:0;justify-content:center}
 .map-places{position:absolute;top:8px;left:0;right:0;z-index:700;display:flex;gap:8px;overflow-x:auto;padding:4px 12px 8px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .map-places::-webkit-scrollbar{display:none}
@@ -388,9 +392,11 @@ body.is-map .view{max-width:none;padding:0}
 .mk-act.dim{opacity:.3}
 .mk-label{background:color-mix(in srgb,var(--surface) 92%,transparent);color:var(--ink);border:0;border-radius:8px;padding:3px 8px;font-size:12px;font-weight:600;box-shadow:var(--shadow);max-width:180px;white-space:normal;line-height:1.25}
 .mk-label.hotel{font-weight:700}
+.mk-label.place{font-weight:700;font-size:13px;background:var(--surface)}
+.mk-label.hide{display:none}
 .mk-label.dim{opacity:.35}
 .mk-label::before{display:none}
-.map:not(.labels-on) .mk-label:not(.hotel){display:none}
+.map:not(.labels-on) .mk-label:not(.hotel):not(.place){display:none}
 .mk-popup .leaflet-popup-content-wrapper{background:var(--surface);color:var(--ink);border-radius:14px;box-shadow:var(--shadow);padding:0}
 .mk-popup .leaflet-popup-content{margin:12px 14px;font-size:14px;line-height:1.35;min-width:180px}
 .mk-popup .leaflet-popup-tip{background:var(--surface)}
@@ -416,6 +422,7 @@ body.is-map .view{max-width:none;padding:0}
 .daychip i{width:12px;height:12px;border-radius:50%;background:var(--c)}
 .daychip.on{background:var(--c);color:#fff;box-shadow:none}
 .daychip.on i{background:#fff}
+.daychip.today{box-shadow:inset 0 0 0 2px var(--c)}
 .map-panel .list{margin-bottom:12px}
 .map-panel .list-label{display:flex;align-items:center;gap:8px;padding:6px 4px 6px}
 .map-panel .list-label span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

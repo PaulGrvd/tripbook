@@ -1,7 +1,7 @@
 // Service worker : HTML réseau d'abord, assets cache d'abord, confirmations gardées hors ligne, notifications push.
-const VERSION = "tripbook-v1";
+const VERSION = "tripbook-v2";
 const FILES = "tripbook-files"; // cache des confirmations, conservé entre versions
-const SHELL = ["./", "index.html", "app.css?v=1", "app.js?v=1", "vendor/leaflet/leaflet.js?v=1", "vendor/leaflet/leaflet.css?v=1", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png",
+const SHELL = ["./", "index.html", "app.css?v=2", "app.js?v=2", "vendor/leaflet/leaflet.js?v=2", "vendor/leaflet/leaflet.css?v=2", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png",
   "fonts/dmsans-latin.woff2", "fonts/dmsans-latin-ext.woff2", "fonts/fraunces-latin.woff2", "fonts/fraunces-latin-ext.woff2"];
 
 self.addEventListener("install", e => {
