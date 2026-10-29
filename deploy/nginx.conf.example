@@ -1,0 +1,13 @@
+# Variante nginx (si Caddy n'est pas utilisé) : à mettre dans un server { } HTTPS existant, ex. géré par certbot.
+location / {
+    proxy_pass http://127.0.0.1:8787;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    # Indispensable pour le temps réel (SSE) :
+    proxy_buffering off;
+    proxy_cache off;
+    proxy_read_timeout 3600s;
+    chunked_transfer_encoding off;
+    client_max_body_size 20m;
+}

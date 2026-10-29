@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Mac à la maison : ~/Library/LaunchAgents/com.tripbook.server.plist — remplacer __DIR__ puis `launchctl load ~/Library/LaunchAgents/com.tripbook.server.plist`.
+     Exposer ensuite en HTTPS avec `tailscale funnel --bg 8787` (voir docs/DEPLOIEMENT.md). -->
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.tripbook.server</string>
+  <key>ProgramArguments</key><array><string>/usr/bin/python3</string><string>__DIR__/server.py</string></array>
+  <key>WorkingDirectory</key><string>__DIR__</string>
+  <key>EnvironmentVariables</key><dict>
+    <key>TRIP_TOKENS</key><string>alice:change-me,claude:change-me-2</string>
+    <key>TRIP_URL</key><string>https://mon-mac.mon-tailnet.ts.net</string>
+    <key>TRIP_SHARE_KEY</key><string>change-me-3</string>
+  </dict>
+  <key>RunAtLoad</key><true/><key>KeepAlive</key><true/>
+  <key>StandardOutPath</key><string>/tmp/tripbook.log</string><key>StandardErrorPath</key><string>/tmp/tripbook.log</string>
+</dict></plist>

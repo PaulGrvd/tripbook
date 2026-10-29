@@ -1,0 +1,72 @@
+{
+ "version": 1,
+ "trip": {
+  "title": "New York 2027",
+  "destination": "New York",
+  "travelers": ["Alice", "Bob"],
+  "start": "2027-05-03",
+  "end": "2027-05-07",
+  "home": "Lyon",
+  "homeTz": "Europe/Paris",
+  "tz": "America/New_York",
+  "currency": "EUR",
+  "localCurrency": "USD",
+  "rhythm": "Première fois à New York : quartiers à pied, un musée par jour, pas de course.",
+  "alert": "",
+  "alertTaskId": ""
+ },
+ "days": [
+  {"id": "2027-05-03", "date": "2027-05-03", "city": "En vol", "title": "Lyon → Paris → New York", "summary": "TGV jusqu'à CDG, vol AF006, arrivée JFK en fin d'après-midi.", "cost": 60, "tags": ["move"],
+   "lodging": {"bookingId": "hotel-brooklyn", "note": "Check-in à partir de 15:00"},
+   "transport": {"route": "Lyon Part-Dieu → CDG → JFK → Brooklyn", "detail": "TGV 07:04 · vol 13:30 · AirTrain + métro A depuis JFK (≈ 1 h)", "booking": "done", "cost": "Payé"},
+   "activities": [{"id": "a1", "title": "Enregistrement en ligne la veille", "booking": "no", "done": false}, {"id": "a2", "title": "Activer l'eSIM à l'atterrissage", "booking": "no", "done": false}],
+   "notes": ""},
+  {"id": "2027-05-04", "date": "2027-05-04", "city": "Brooklyn", "title": "Brooklyn Heights et le pont", "summary": "Promenade au lever du jour, DUMBO, traversée du pont vers Manhattan.", "cost": 90, "tags": ["slow"],
+   "lodging": {"bookingId": "hotel-brooklyn", "note": ""}, "transport": {"route": "À pied + métro", "detail": "", "booking": "none", "cost": ""},
+   "geo": {"lat": 40.6962, "lng": -73.9969},
+   "activities": [{"id": "a1", "title": "Brooklyn Heights Promenade", "booking": "no", "done": false, "geo": {"lat": 40.6961, "lng": -73.9975}}, {"id": "a2", "title": "Pont de Brooklyn à pied", "booking": "no", "done": false, "geo": {"lat": 40.7061, "lng": -73.9969}}],
+   "notes": ""},
+  {"id": "2027-05-05", "date": "2027-05-05", "city": "Manhattan", "title": "Midtown et le MoMA", "summary": "MoMA le matin (billet réservé), Central Park l'après-midi.", "cost": 140, "tags": ["book"],
+   "lodging": {"bookingId": "hotel-brooklyn", "note": ""}, "transport": {"route": "Métro", "detail": "", "booking": "none", "cost": ""},
+   "geo": {"lat": 40.7614, "lng": -73.9776},
+   "activities": [{"id": "a1", "title": "MoMA 10:30", "booking": "yes", "done": false, "geo": {"lat": 40.7614, "lng": -73.9776}}, {"id": "a2", "title": "Central Park, The Ramble", "booking": "no", "done": false, "geo": {"lat": 40.7794, "lng": -73.9713}}],
+   "notes": ""},
+  {"id": "2027-05-06", "date": "2027-05-06", "city": "Manhattan", "title": "High Line et Chelsea", "summary": "Journée libre : High Line, Chelsea Market, coucher de soleil depuis Little Island.", "cost": 80, "tags": [],
+   "lodging": {"bookingId": "hotel-brooklyn", "note": ""}, "transport": {"route": "Métro", "detail": "", "booking": "none", "cost": ""},
+   "geo": {"lat": 40.7480, "lng": -74.0048},
+   "activities": [{"id": "a1", "title": "High Line", "booking": "no", "done": false, "geo": {"lat": 40.7480, "lng": -74.0048}}],
+   "notes": ""},
+  {"id": "2027-05-07", "date": "2027-05-07", "city": "Retour", "title": "New York → Paris → Lyon", "summary": "Check-out 11:00, vol du soir, arrivée le 8 au matin.", "cost": 40, "tags": ["move"],
+   "lodging": {"bookingId": "", "note": "Nuit dans l'avion"}, "transport": {"route": "Brooklyn → JFK → CDG → Lyon", "detail": "", "booking": "done", "cost": "Payé"},
+   "activities": [], "notes": ""}
+ ],
+ "bookings": [
+  {"id": "flight-out", "type": "flight", "status": "confirmed", "name": "Air France · Paris → New York", "city": "Vol aller", "checkin": "2027-05-03", "checkout": "2027-05-03", "checkinTime": "13:30", "checkoutTime": "15:45",
+   "price": 980, "currency": "EUR", "ref": "ABC123", "platform": "Air France", "room": "Economy · 2 adultes", "from": "Paris (CDG)", "to": "New York (JFK)", "tz": "Europe/Paris", "notes": "1 bagage 23 kg par personne",
+   "legs": [{"flight": "AF006", "from": "Paris", "to": "New York", "dep": "2027-05-03", "depTime": "13:30", "depTz": "Europe/Paris", "arr": "2027-05-03", "arrTime": "15:45", "arrTz": "America/New_York"}]},
+  {"id": "flight-back", "type": "flight", "status": "confirmed", "name": "Air France · New York → Paris", "city": "Vol retour", "checkin": "2027-05-07", "checkout": "2027-05-08", "checkinTime": "19:10", "checkoutTime": "08:35",
+   "price": 0, "currency": "EUR", "ref": "ABC123", "platform": "Air France", "from": "New York (JFK)", "to": "Paris (CDG)", "tz": "America/New_York",
+   "legs": [{"flight": "AF011", "from": "New York", "to": "Paris", "dep": "2027-05-07", "depTime": "19:10", "depTz": "America/New_York", "arr": "2027-05-08", "arrTime": "08:35", "arrTz": "Europe/Paris"}]},
+  {"id": "hotel-brooklyn", "type": "hotel", "status": "confirmed", "name": "Hôtel exemple · Brooklyn Heights", "city": "Brooklyn", "checkin": "2027-05-03", "checkout": "2027-05-07", "checkinTime": "15:00", "checkoutTime": "11:00",
+   "price": 1120, "currency": "EUR", "ref": "1234.567.890", "pin": "0000", "platform": "Booking.com", "room": "Chambre double", "meals": "Petit-déjeuner inclus",
+   "address": "10 Example Street, Brooklyn, NY 11201", "phone": "+1 212 555 0100", "cancelBy": "2027-04-26", "geo": {"lat": 40.6950, "lng": -73.9930}, "notes": ""},
+  {"id": "moma", "type": "activity", "status": "todo", "name": "MoMA · billets horodatés", "city": "Manhattan", "checkin": "2027-05-05", "checkinTime": "10:30", "price": 60, "currency": "EUR", "platform": "moma.org", "geo": {"lat": 40.7614, "lng": -73.9776}}
+ ],
+ "tasks": [
+  {"id": "esta", "col": "todo", "priority": "critical", "title": "Faire l'ESTA pour chaque voyageur", "desc": "Sur le site officiel uniquement (esta.cbp.dhs.gov). Compter 72 h.", "deadline": "Avant le 20 avril"},
+  {"id": "insurance", "col": "check", "priority": "normal", "title": "Vérifier l'assurance santé de la carte bancaire", "desc": "Plafond de couverture aux États-Unis, numéro d'assistance à noter dans l'app.", "deadline": "Avril"},
+  {"id": "moma-tickets", "col": "todo", "priority": "booking", "title": "Réserver le MoMA du 5 mai à 10:30", "desc": "", "deadline": "Avril"},
+  {"id": "esim", "col": "todo", "priority": "normal", "title": "Acheter une eSIM data", "desc": "", "deadline": "Semaine du départ"}
+ ],
+ "budget": {
+  "note": "Pour 2, hors shopping.",
+  "rate": 1.08,
+  "items": [{"label": "Vols", "amount": 980}, {"label": "Logements", "amount": 1120}, {"label": "Food", "amount": 600}, {"label": "Transports", "amount": 120}, {"label": "Activités", "amount": 250}],
+  "categories": ["Logements", "Food", "Transports", "Activités", "Shopping", "Autre"]
+ },
+ "notes": [],
+ "expenses": [],
+ "guides": [{"id": "g-manhattan", "city": "Manhattan", "title": "Manhattan · repères", "text": "Métro : carte bancaire sans contact aux tourniquets (OMNY), plafond hebdomadaire automatique.\nPourboire : 18–20 % au restaurant, le prix affiché est hors taxe."}],
+ "ideas": [],
+ "sleep": []
+}

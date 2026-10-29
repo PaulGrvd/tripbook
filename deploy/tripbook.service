@@ -1,0 +1,21 @@
+# /etc/systemd/system/tripbook.service — deploy/deploy.sh remplace __DIR__ et __PYTHON__
+[Unit]
+Description=Tripbook — carnet de voyage (PWA + API)
+After=network.target
+
+[Service]
+Type=simple
+User=tripbook
+Group=tripbook
+WorkingDirectory=__DIR__
+EnvironmentFile=__DIR__/.env
+ExecStart=__PYTHON__ __DIR__/server.py
+Restart=always
+RestartSec=3
+ProtectSystem=strict
+ReadWritePaths=__DIR__/data
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

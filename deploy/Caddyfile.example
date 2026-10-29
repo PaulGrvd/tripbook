@@ -1,0 +1,8 @@
+# /etc/caddy/Caddyfile — HTTPS automatique (Let's Encrypt). deploy/deploy.sh l'écrit avec l'hôte sslip.io de la machine.
+# Sans nom de domaine : <IP avec des tirets>.sslip.io pointe automatiquement vers l'IP (ex. 203.0.113.10 → 203-0-113-10.sslip.io).
+# Avec un domaine : créer un enregistrement A vers l'IP, le mettre ici, puis `systemctl reload caddy`.
+203-0-113-10.sslip.io {
+    reverse_proxy 127.0.0.1:8787 {
+        flush_interval -1   # indispensable au temps réel (SSE)
+    }
+}

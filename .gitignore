@@ -1,0 +1,12 @@
+.DS_Store
+.env
+__pycache__/
+venv/
+data/trip.json
+data/trip.json.tmp
+data/files/*
+!data/files/.gitkeep
+data/backups/
+data/push.json
+data/vapid/
+.gstack/

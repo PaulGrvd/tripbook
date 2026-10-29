@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>{{TITLE_FULL}}</title>
+<meta name="theme-color" content="#f6f1e7">
+<meta property="og:title" content="{{TITLE_FULL}}">
+<meta property="og:description" content="Notre itinéraire jour par jour, sur une carte. Laisse-nous tes conseils !">
+<meta property="og:image" content="{{PUBLIC_URL}}/icons/icon-512.png">
+<link rel="icon" href="/icons/icon-192.png">
+<link rel="stylesheet" href="/vendor/leaflet/leaflet.css?v=1">
+<style>
+/* Page de partage — même thème que l'app, sans budget ni références. */
+@font-face{font-family:'DM Sans';font-weight:400 700;font-display:swap;src:url(/fonts/dmsans-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'DM Sans';font-weight:400 700;font-display:swap;src:url(/fonts/dmsans-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+1E00-1E9F,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:'Fraunces';font-weight:600 700;font-display:swap;src:url(/fonts/fraunces-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Fraunces';font-weight:600 700;font-display:swap;src:url(/fonts/fraunces-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C4,U+2113,U+2C60-2C7F,U+A720-A7FF}
+:root{
+  --bg:#f6f1e7; --surface:#fffdf8; --ink:#1d1915; --muted:#6f665b; --line:#e8dfcf; --soft:#f0e8da;
+  --red:#b8321f; --red-tint:#f7e2dc; --shadow:0 1px 2px rgba(60,40,20,.05),0 8px 24px rgba(60,40,20,.06);
+  --display:"Fraunces",Georgia,"Times New Roman",serif;
+  --body:"DM Sans",system-ui,-apple-system,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#141210; --surface:#1e1b18; --ink:#f2eadf; --muted:#a89e90; --line:#302b26; --soft:#27231f;
+  --red:#e8664f; --red-tint:#3a211b; --shadow:0 1px 2px rgba(0,0,0,.3); color-scheme:dark;
+}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--body);-webkit-text-size-adjust:100%}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+h1,h2,h3{font-family:var(--display);font-weight:700;margin:0;line-height:1.2}
+
+.layout{display:grid;grid-template-columns:1fr;min-height:100dvh}
+.mapcol{position:relative;height:min(46dvh,420px);background:var(--soft);border-bottom:1px solid var(--line)}
+#map{position:absolute;inset:0}
+.side{padding:18px 16px calc(96px + env(safe-area-inset-bottom));min-width:0}
+@media (min-width:900px){
+  .layout{grid-template-columns:minmax(0,1fr) 440px}
+  .mapcol{position:sticky;top:0;height:100dvh;border-bottom:0;border-right:1px solid var(--line)}
+  .side{height:100dvh;overflow-y:auto;padding:28px 24px 48px}
+}
+
+.eyebrow{color:var(--red);font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+.head h1{font-size:28px;margin-top:2px}
+.head .dates{color:var(--muted);margin-top:2px}
+.hello{margin:12px 0 0;padding:0 0 0 12px;border-left:3px solid var(--red)}
+.hello strong{font-family:var(--display)}
+
+.segwrap{position:sticky;top:0;z-index:600;margin:16px -16px 14px;padding:calc(8px + env(safe-area-inset-top)) 16px 8px;background:var(--bg)}
+.seg{display:flex;gap:4px;padding:4px;border-radius:12px;background:var(--soft)}
+@media (min-width:900px){.segwrap{margin:16px -24px 14px;padding:8px 24px}}
+.seg button{flex:1;min-height:44px;border:0;border-radius:9px;background:none;font-weight:600;color:var(--muted)}
+.seg button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.seg .n{display:inline-block;min-width:20px;padding:0 6px;margin-left:4px;border-radius:10px;background:var(--red);color:#fff;font-size:12px;line-height:20px}
+
+.stage{margin:0 0 22px}
+.stage-h{display:flex;gap:10px;align-items:baseline;margin:0 0 8px}
+.stage-h .num{flex:none;width:26px;height:26px;border-radius:50%;background:var(--red);color:#fff;font:700 13px/26px var(--body);text-align:center;align-self:center}
+.stage-h h2{font-size:20px}
+.stage-h .when{color:var(--muted);font-size:13px;margin-left:auto;white-space:nowrap}
+.stage .lodging{color:var(--muted);font-size:13px;margin:-4px 0 8px 36px}
+
+.day{display:block;position:relative;width:100%;text-align:left;margin:0 0 8px;padding:12px 40px 12px 14px;cursor:pointer;border-radius:14px;border:1px solid var(--line);background:var(--surface);transition:border-color .15s,box-shadow .15s}
+.day:hover{border-color:color-mix(in srgb,var(--red) 40%,var(--line))}
+.day.on{border-color:var(--red);box-shadow:0 0 0 1px var(--red),var(--shadow)}
+.day::after{content:"";position:absolute;right:16px;top:20px;width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);transition:transform .2s}
+.day.on::after{transform:rotate(225deg);top:24px}
+.day .top{display:flex;flex-direction:column;gap:1px}
+.day .dow{flex:none;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--red)}
+.day h3{font-family:var(--body);font-size:15px;font-weight:700}
+.day .sum{color:var(--muted);font-size:14px;margin:4px 0 0}
+.day ul{margin:8px 0 0;padding:0;list-style:none;display:none}
+.day.on ul{display:block}
+.day li{position:relative;padding:3px 0 3px 18px;font-size:14px}
+.day li::before{content:"";position:absolute;left:3px;top:10px;width:8px;height:8px;border-radius:50%;background:var(--c,var(--muted))}
+.day li.nogeo::before{background:none;border:1.5px solid var(--muted);width:5px;height:5px}
+.day .actions{display:none;flex-wrap:wrap;gap:8px;align-items:center;margin:12px -26px 0 0}
+.day.on .actions{display:flex}
+.day .badge{display:inline-block;margin-top:6px;font-size:13px;color:var(--red);font-weight:600}
+.day.on .badge{display:none}
+.day .count{color:var(--muted);font-size:13px}
+.linkbtn{border:0;background:var(--red-tint);color:var(--red);font-weight:600;font-size:14px;padding:0 16px;border-radius:999px;min-height:44px}
+.linkbtn.ghost{background:none;border:1px solid var(--line);color:var(--ink)}
+@media (min-width:900px){.onlymobile{display:none!important}}
+
+form.comment{padding:14px;border-radius:14px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);margin-bottom:18px}
+form.comment label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin:0 0 4px}
+form.comment .row{margin-bottom:10px}
+form.comment input,form.comment select,form.comment textarea{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);font-size:16px}
+form.comment textarea{min-height:110px;resize:vertical}
+form.comment input:focus,form.comment select:focus,form.comment textarea:focus{outline:2px solid var(--red);outline-offset:-1px}
+.as{font-size:14px;color:var(--muted);margin:0 0 10px}
+.as{display:flex;align-items:center;flex-wrap:wrap}
+.as b{margin-left:.3em}
+.as button{border:0;background:none;color:var(--red);font-weight:600;padding:0 8px;min-height:44px;text-decoration:underline}
+.send{width:100%;min-height:46px;border:0;border-radius:12px;background:var(--red);color:#fff;font-weight:700}
+.send:disabled{opacity:.6}
+.msg{font-size:14px;margin:8px 0 0}
+.msg.err{color:var(--red)}
+
+.c{padding:12px 0;border-top:1px solid var(--line)}
+.c .meta{font-size:13px;color:var(--muted)}
+.c .meta b{color:var(--ink)}
+.c .about{border:0;background:none;padding:10px 4px;margin:-10px 0;color:var(--red);font-size:13px;font-weight:600}
+.daycomments{margin:12px 0 0}
+.daycomments .c{padding:10px 0 0}
+.c p{margin:4px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.empty{color:var(--muted);text-align:center;padding:24px 0}
+.foot{color:var(--muted);font-size:12px;text-align:center;margin-top:28px}
+
+.pin{width:26px;height:26px;border-radius:50%;background:var(--red);color:#fff;border:2px solid #fff;font:700 12px/22px var(--body);text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.35)}
+.pin.hotel{border-radius:7px;background:#1d1915;font-size:13px}
+.pin.act{width:16px;height:16px;background:var(--c)}
+.leaflet-tooltip{font:600 13px var(--body)}
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:700;display:flex;gap:8px;padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid var(--line)}
+.dock button{min-height:48px;border-radius:12px;font-weight:700;border:0}
+.dock .tomap{flex:none;padding:0 16px;background:var(--surface);border:1px solid var(--line)}
+.dock .write{flex:1;background:var(--red);color:#fff}
+@media (min-width:900px){.dock{display:none}}
+.maphint{position:absolute;left:10px;bottom:10px;z-index:500;padding:4px 10px;border-radius:999px;background:rgba(29,25,21,.72);color:#fff;font-size:12px;pointer-events:none}
+@media (min-width:900px){.maphint{display:none}}
+.fatal{padding:40px 20px;text-align:center;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="layout">
+  <div class="mapcol" id="mapcol"><div id="map" role="img" aria-label="Carte de l'itinéraire"></div><span class="maphint" id="maphint" hidden>Deux doigts pour zoomer</span></div>
+  <div class="side" id="side"><p class="empty">Chargement…</p></div>
+</div>
+<div class="dock" id="dock" hidden><button type="button" class="tomap" data-tomap="1">Carte</button><button type="button" class="write" data-comment="">Écrire un commentaire</button></div>
+<script src="/vendor/leaflet/leaflet.js?v=1"></script>
+<script>
+"use strict";
+const Q = new URLSearchParams(location.search);
+const KEY = Q.get("k") || "";
+const COLORS = ["#d1495b", "#2a9d8f", "#e0871f", "#4c6ef5", "#8e5aa8", "#6a994e", "#c2185b", "#3d7ea6"];
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const D = iso => new Date(iso + "T12:00:00");
+const fmt = (iso, o) => D(iso).toLocaleDateString("fr-FR", o);
+const dayLabel = iso => fmt(iso, { weekday: "short", day: "numeric", month: "short" });
+const hasGeo = o => !!(o && o.geo && isFinite(+o.geo.lat) && isFinite(+o.geo.lng));
+const ll = o => [+o.geo.lat, +o.geo.lng];
+
+let name = (Q.get("nom") || "").trim().slice(0, 40);
+try { if (name) localStorage.setItem("shareName", name); else name = localStorage.getItem("shareName") || ""; } catch (_) {}
+
+const S = { data: null, stages: [], tab: "plan", day: "", about: "" };
+let map, layer;
+
+// étapes = jours consécutifs dans la même ville
+function stagesOf(days) {
+  const out = [];
+  for (const d of days) {
+    let s = out[out.length - 1];
+    if (!s || s.city !== d.city) { s = { city: d.city, days: [], lodging: null }; out.push(s); }
+    s.days.push(d);
+    if (!s.lodging && hasGeo(d) && d.lodging && d.lodging.name) s.lodging = d.lodging;
+  }
+  for (const s of out) {
+    const g = s.days.find(hasGeo);
+    s.center = g ? ll(g) : hasGeo(s.lodging) ? ll(s.lodging) : null;
+    s.days.forEach((d, i) => { d.color = COLORS[i % COLORS.length]; d.stage = s; });
+  }
+  return out;
+}
+
+async function load() {
+  const r = await fetch("/api/share?k=" + encodeURIComponent(KEY), { cache: "no-store" });
+  if (!r.ok) throw new Error(r.status);
+  S.data = await r.json();
+  S.stages = stagesOf(S.data.days);
+}
+
+function render() {
+  const t = S.data.trip, comments = S.data.comments;
+  const who = (t.travelers || []).join(" & ");
+  const head = `<header class="head"><div class="eyebrow">Carnet de voyage</div><h1>${esc(t.title || "Carnet de voyage")}</h1>
+    <div class="dates">${esc(who)} · ${fmt(t.start, { day: "numeric", month: "long" })} – ${fmt(t.end, { day: "numeric", month: "long", year: "numeric" })}</div></header>
+    <p class="hello">${name ? `Bonjour <strong>${esc(name)}</strong> !` : "Bonjour !"} Voici notre itinéraire. Touche une journée pour la voir en détail. Une adresse, un conseil ? Laisse-nous un commentaire.</p>`;
+  const seg = `<div class="segwrap" id="tabs"><div class="seg" role="tablist"><button role="tab" data-tab="plan" aria-selected="${S.tab === "plan"}">Planning</button><button role="tab" data-tab="comments" aria-selected="${S.tab === "comments"}">Commentaires${comments.length ? `<span class="n">${comments.length}</span>` : ""}</button></div></div>`;
+  $("#side").innerHTML = head + seg + (S.tab === "plan" ? renderPlan() : renderComments()) + `<p class="foot">Page privée : merci de ne pas partager ce lien.</p>`;
+  $("#dock").hidden = S.tab !== "plan";
+}
+
+function renderPlan() {
+  const n = id => S.data.comments.filter(c => c.dayId === id).length;
+  return S.stages.map((s, i) => {
+    const first = s.days[0].date, last = s.days[s.days.length - 1].date;
+    const when = first === last ? dayLabel(first) : `${fmt(first, { day: "numeric" })} – ${fmt(last, { day: "numeric", month: "short" })}`;
+    const days = s.days.map(d => {
+      const acts = d.activities.map(a => `<li class="${hasGeo(a) ? "" : "nogeo"}" style="--c:${d.color}">${a.time ? esc(a.time) + " · " : ""}${esc(a.title)}</li>`).join("");
+      const k = n(d.id);
+      return `<article class="day${S.day === d.id ? " on" : ""}" id="d-${esc(d.id)}" data-day="${esc(d.id)}" tabindex="0" aria-expanded="${S.day === d.id}">
+        <div class="top"><span class="dow">${esc(dayLabel(d.date))}</span><h3>${esc(d.title)}</h3></div>
+        ${d.summary ? `<p class="sum">${esc(d.summary)}</p>` : ""}
+        ${acts ? `<ul>${acts}</ul>` : ""}
+        ${k ? `<span class="badge">${k} commentaire${k > 1 ? "s" : ""}</span>` : ""}
+        <div class="actions"><button type="button" class="linkbtn" data-comment="${esc(d.id)}">Commenter ce jour</button><button type="button" class="linkbtn ghost onlymobile" data-tomap="1">Voir sur la carte</button></div>
+        ${S.day === d.id && k ? `<div class="daycomments">${S.data.comments.filter(c => c.dayId === d.id).map(commentHTML).join("")}</div>` : ""}
+      </article>`;
+    }).join("");
+    return `<section class="stage"><div class="stage-h"><span class="num">${i + 1}</span><h2>${esc(s.city)}</h2><span class="when">${when}</span></div>
+      ${s.lodging ? `<div class="lodging">${esc(s.lodging.name)}</div>` : ""}${days}</section>`;
+  }).join("");
+}
+
+function renderComments() {
+  const opts = [`<option value="">Tout le voyage</option>`].concat(S.data.days.map(d => `<option value="${esc(d.id)}"${S.about === d.id ? " selected" : ""}>${esc(dayLabel(d.date))} · ${esc(d.title)}</option>`)).join("");
+  const nameRow = name ? `<p class="as">Tu écris en tant que <b>${esc(name)}</b><button type="button" id="rename">changer</button></p>`
+    : `<div class="row"><label for="cname">Ton prénom</label><input id="cname" name="author" required maxlength="40" autocomplete="given-name"></div>`;
+  const form = `<form class="comment" id="cform">${nameRow}
+    <div class="row"><label for="cabout">À propos de</label><select id="cabout" name="dayId">${opts}</select></div>
+    <div class="row"><label for="ctext">Commentaire</label><textarea id="ctext" name="text" required maxlength="2000" placeholder="Une adresse à ne pas manquer, un conseil…"></textarea></div>
+    <button class="send" type="submit">Envoyer</button><p class="msg" id="cmsg" role="status" aria-live="polite"></p></form>`;
+  const list = S.data.comments.slice().reverse().map(c => commentHTML(c, true)).join("");
+  return form + (list || `<p class="empty">Personne n'a encore commenté : à toi l'honneur !</p>`);
+}
+
+function commentHTML(c, withDay) {
+  const d = withDay && S.data.days.find(x => x.id === c.dayId);
+  const when = new Date(c.createdAt).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  return `<div class="c"><div class="meta"><b>${esc(c.author)}</b> · ${esc(when)}${d ? ` · <button type="button" class="about" data-goto="${esc(d.id)}">${esc(dayLabel(d.date))}</button>` : ""}</div><p>${esc(c.text)}</p></div>`;
+}
+
+// --- carte ---
+function initMap() {
+  map = L.map("map", { zoomControl: !matchMedia("(pointer:coarse)").matches, attributionControl: false, zoomSnap: .25 });
+  L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", { maxZoom: 18 }).addTo(map);
+  L.control.attribution({ position: "bottomright", prefix: false }).addAttribution('Tiles © <a href="https://www.esri.com" target="_blank" rel="noopener">Esri</a>').addTo(map);
+  layer = L.layerGroup().addTo(map);
+  if (matchMedia("(pointer:coarse) and (max-width:899px)").matches) {
+    const hint = $("#maphint"), lock = on => { on ? map.dragging.disable() : map.dragging.enable(); hint.hidden = !on; };
+    hint.textContent = "Touche la carte pour l'explorer";
+    lock(true);
+    map.on("click", () => lock(false));
+    new IntersectionObserver(([e]) => { if (!e.isIntersecting) lock(true); }).observe($("#mapcol"));
+  }
+}
+const icon = (cls, html, size, style) => L.divIcon({ className: "", html: `<div class="pin ${cls}" style="${style || ""}">${html}</div>`, iconSize: [size, size], iconAnchor: [size / 2, size / 2] });
+
+function drawMap() {
+  layer.clearLayers();
+  const d = S.data.days.find(x => x.id === S.day);
+  const pad = matchMedia("(min-width:900px)").matches ? [60, 60] : [30, 30];
+  if (!d) {
+    const pts = S.stages.filter(s => s.center);
+    L.polyline(pts.map(s => s.center), { color: "#b8321f", weight: 2.5, opacity: .7, dashArray: "6 7" }).addTo(layer);
+    pts.forEach(s => {
+      const i = S.stages.indexOf(s) + 1;
+      L.marker(s.center, { icon: icon("", i, 26), title: s.city }).addTo(layer)
+        .bindTooltip(`${i}. ${esc(s.city)}`, { direction: "top", offset: [0, -12] })
+        .on("click", () => selectDay(s.days[0].id, true));
+    });
+    if (pts.length) map.fitBounds(L.latLngBounds(pts.map(s => s.center)), { padding: pad });
+    return;
+  }
+  const bounds = [];
+  if (hasGeo(d.lodging)) {
+    bounds.push(ll(d.lodging));
+    L.marker(ll(d.lodging), { icon: icon("hotel", "⌂", 26), title: d.lodging.name, zIndexOffset: -10 }).addTo(layer).bindTooltip(esc(d.lodging.name), { direction: "top", offset: [0, -12] });
+  }
+  d.activities.filter(hasGeo).forEach(a => {
+    bounds.push(ll(a));
+    L.marker(ll(a), { icon: icon("act", "", 16, `--c:${d.color}`), title: a.title }).addTo(layer).bindTooltip(esc(a.title), { direction: "top", offset: [0, -8] });
+  });
+  if (!bounds.length && hasGeo(d)) bounds.push(ll(d));
+  if (bounds.length === 1) map.flyTo(bounds[0], 13, { duration: .6 });
+  else if (bounds.length) map.flyToBounds(L.latLngBounds(bounds), { padding: pad, maxZoom: 15, duration: .6 });
+}
+
+function selectDay(id, scroll) {
+  S.day = S.day === id && !scroll ? "" : id;
+  if (S.tab !== "plan") S.tab = "plan";
+  render(); drawMap();
+  if (scroll && S.day) document.getElementById("d-" + S.day)?.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+// après un changement d'onglet, remonter en haut de la liste si on l'avait dépassée
+function toTabs() {
+  const tabs = $("#tabs");
+  if (tabs.getBoundingClientRect().top > 1) return;
+  (matchMedia("(min-width:900px)").matches ? $("#side") : window).scrollBy(0, tabs.previousElementSibling.getBoundingClientRect().bottom);
+}
+
+// --- interactions ---
+document.addEventListener("click", e => {
+  const t = e.target.closest("[data-tab],[data-tomap],[data-comment],[data-goto],#rename,[data-day]");
+  if (!t) return;
+  if (t.dataset.tab) { S.tab = t.dataset.tab; render(); toTabs(); return; }
+  if (t.dataset.tomap) { window.scrollTo({ top: 0, behavior: "smooth" }); return; }
+  if (t.dataset.comment != null) { S.about = t.dataset.comment; S.tab = "comments"; render(); toTabs(); $("#ctext")?.focus({ preventScroll: true }); return; }
+  if (t.dataset.goto) { selectDay(t.dataset.goto, true); return; }
+  if (t.id === "rename") { name = ""; render(); $("#cname")?.focus(); return; }
+  if (t.dataset.day) selectDay(t.dataset.day, false);
+});
+document.addEventListener("keydown", e => { const t = e.target.closest?.(".day"); if (t && (e.key === "Enter" || e.key === " ") && e.target === t) { e.preventDefault(); selectDay(t.dataset.day, false); } });
+document.addEventListener("submit", async e => {
+  if (e.target.id !== "cform") return;
+  e.preventDefault();
+  const f = e.target, btn = f.querySelector(".send"), msg = $("#cmsg");
+  const author = name || (f.elements.author ? f.elements.author.value.trim() : "");
+  const text = f.elements.text.value.trim();
+  if (!author || !text) return;
+  btn.disabled = true; msg.className = "msg"; msg.textContent = "Envoi…";
+  try {
+    const r = await fetch("/api/share/comments?k=" + encodeURIComponent(KEY), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: author, text, dayId: f.elements.dayId.value }) });
+    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || r.status);
+    S.data.comments.push(await r.json());
+    if (!name) { name = author; try { localStorage.setItem("shareName", name); } catch (_) {} }
+    S.about = f.elements.dayId.value;
+    render();
+    const m = $("#cmsg"); m.textContent = "Merci " + name + ", c'est envoyé !";
+  } catch (err) {
+    btn.disabled = false; msg.className = "msg err"; msg.textContent = "Échec de l'envoi (" + err.message + "). Réessaie ?";
+  }
+});
+
+(async () => {
+  try { await load(); }
+  catch (_) { document.querySelector(".layout").innerHTML = `<div class="fatal"><h1>Lien invalide</h1><p>Ce lien de partage n'est pas (ou plus) valide.</p></div>`; return; }
+  render();
+  if (window.L) { initMap(); drawMap(); } else $(".mapcol").hidden = true;
+})();
+</script>
+</body>
+</html>
